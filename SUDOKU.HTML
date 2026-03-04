@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Sudoku Game</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #4e73df, #1cc88a);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.container {
+    text-align: center;
+}
+
+h1 {
+    color: white;
+    margin-bottom: 20px;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(9, 50px);
+    grid-template-rows: repeat(9, 50px);
+    background: white;
+    border: 4px solid black;
+}
+
+.cell {
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    font-size: 20px;
+    border: 1px solid #999;
+    outline: none;
+}
+
+.cell:focus {
+    background: #e3f2fd;
+}
+
+/* Thick borders for 3x3 boxes */
+.cell:nth-child(3n) {
+    border-right: 3px solid black;
+}
+
+.cell:nth-child(n+19):nth-child(-n+27),
+.cell:nth-child(n+46):nth-child(-n+54) {
+    border-bottom: 3px solid black;
+}
+
+.cell:nth-child(9n+1) {
+    border-left: 3px solid black;
+}
+
+.cell:nth-child(-n+9) {
+    border-top: 3px solid black;
+}
+
+.given {
+    background: #f0f0f0;
+    font-weight: bold;
+}
+
+.error {
+    background: #ffcccc !important;
+}
+
+.buttons {
+    margin-top: 20px;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.solve {
+    background: #36b9cc;
+    color: white;
+}
+
+.new {
+    background: #f6c23e;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>🧩 Real Sudoku</h1>
+    <div class="board" id="board"></div>
+
+    <div class="buttons">
+        <button class="solve" onclick="solveGame()">Solve</button>
+        <button class="new" onclick="loadPuzzle()">New Puzzle</button>
+    </div>
+</div>
+
+<script>
+
+const puzzle = [
+[5,3,0,0,7,0,0,0,0],
+[6,0,0,1,9,5,0,0,0],
+[0,9,8,0,0,0,0,6,0],
+[8,0,0,0,6,0,0,0,3],
+[4,0,0,8,0,3,0,0,1],
+[7,0,0,0,2,0,0,0,6],
+[0,6,0,0,0,0,2,8,0],
+[0,0,0,4,1,9,0,0,5],
+[0,0,0,0,8,0,0,7,9]
+];
+
+const boardElement = document.getElementById("board");
+
+function createBoard() {
+    boardElement.innerHTML = "";
+    for (let i = 0; i < 9; i++) {
+        for (let j = 0; j < 9; j++) {
+            let input = document.createElement("input");
+            input.type = "text";
+            input.maxLength = "1";
+            input.classList.add("cell");
+
+            if (puzzle[i][j] !== 0) {
+                input.value = puzzle[i][j];
+                input.classList.add("given");
+                input.disabled = true;
+            } else {
+                input.addEventListener("input", validateInput);
+            }
+
+            boardElement.appendChild(input);
+        }
+    }
+}
+
+function validateInput(e) {
+    e.target.value = e.target.value.replace(/[^1-9]/g, "");
+}
+
+function getBoard() {
+    const cells = document.querySelectorAll(".cell");
+    let board = [];
+    for (let i = 0; i < 9; i++) {
+        board[i] = [];
+        for (let j = 0; j < 9; j++) {
+            let val = cells[i * 9 + j].value;
+            board[i][j] = val ? parseInt(val) : 0;
+        }
+    }
+    return board;
+}
+
+function setBoard(board) {
+    const cells = document.querySelectorAll(".cell");
+    for (let i = 0; i < 9; i++)
+        for (let j = 0; j < 9; j++)
+            if (!cells[i*9+j].classList.contains("given"))
+                cells[i*9+j].value = board[i][j] || "";
+}
+
+function isValid(board, row, col, num) {
+    for (let x = 0; x < 9; x++)
+        if (board[row][x] === num || board[x][col] === num)
+            return false;
+
+    let startRow = row - row % 3;
+    let startCol = col - col % 3;
+
+    for (let i = 0; i < 3; i++)
+        for (let j = 0; j < 3; j++)
+            if (board[i + startRow][j + startCol] === num)
+                return false;
+
+    return true;
+}
+
+function solve(board) {
+    for (let row = 0; row < 9; row++) {
+        for (let col = 0; col < 9; col++) {
+            if (board[row][col] === 0) {
+                for (let num = 1; num <= 9; num++) {
+                    if (isValid(board, row, col, num)) {
+                        board[row][col] = num;
+                        if (solve(board)) return true;
+                        board[row][col] = 0;
+                    }
+                }
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function solveGame() {
+    let board = getBoard();
+    if (solve(board)) {
+        setBoard(board);
+        alert("Sudoku Solved! 🎉");
+    } else {
+        alert("No solution found ❌");
+    }
+}
+
+function loadPuzzle() {
+    createBoard();
+}
+
+createBoard();
+
+</script>
+
+</body>
+</html>
